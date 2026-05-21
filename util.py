@@ -5,6 +5,8 @@ import requests
 import torch
 from PIL import Image
 from io import BytesIO
+import os
+
 OSS_ENDPOINT_LIST = [
     # 中国内地
     "oss-cn-hangzhou.aliyuncs.com",
@@ -107,6 +109,11 @@ def put_object(file,filename,access_key_id, access_key_secret, security_token,bu
         bucket.put_object(filename, image_bytes)
     except oss2.exceptions.OssError as e:
         raise ValueError(f'上传失败，错误信息: {e}')
+
+    except Exception as e:
+        print(f"OSS 上传失败: {str(e)}")
+        return None
+
 # 从oss获取图片
 def get_object(object_key, access_key_id, access_key_secret, security_token, bucket_name, endpoint):
     try:
