@@ -44,19 +44,19 @@ class ImageToInput(Ac):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "image": ("STRING", {"default": "本地图像路径"}),
+                "image_path": ("STRING", {"default": "本地图像路径"}),
             }
         }
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "image_to_input"
 
-    def image_to_input(self, image):
-        if not os.path.exists(image):
-            raise FileNotFoundError(f"图像文件不存在: {image}")
+    def image_to_input(self, image_path):
+        if not os.path.exists(image_path):
+            raise FileNotFoundError(f"图像文件不存在: {image_path}")
 
         input_dir = folder_paths.get_input_directory()
-        file_ext = os.path.splitext(image)[1].lower()
+        file_ext = os.path.splitext(image_path)[1].lower()
         if not file_ext:
             file_ext = ".png"
 
@@ -64,7 +64,7 @@ class ImageToInput(Ac):
         new_filename = f"{random_digits}{file_ext}"
         dest_path = os.path.join(input_dir, new_filename)
 
-        shutil.copy2(image, dest_path)
+        shutil.copy2(image_path, dest_path)
 
         img = Image.open(dest_path)
         img_out= pil2tensor(img)
