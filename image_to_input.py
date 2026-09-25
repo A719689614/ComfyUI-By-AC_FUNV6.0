@@ -9,6 +9,24 @@ import torch
 import numpy as np
 import av
 
+try:
+    from comfy_api.latest import InputImpl
+    HAS_INPUT_IMPL = True
+except ImportError:
+    HAS_INPUT_IMPL = False
+    InputImpl = None
+
+try:
+    from comfy_api.input.video_types import VideoFromFile
+    HAS_VIDEO_TYPE = True
+except ImportError:
+    try:
+        from comfy_api.latest._input_impl.video_types import VideoFromFile
+        HAS_VIDEO_TYPE = True
+    except ImportError:
+        HAS_VIDEO_TYPE = False
+        VideoFromFile = None
+
 def pil2tensor(img):
     output_images = []
     output_masks = []
@@ -139,3 +157,41 @@ class AudioToInput(Ac):
         audio = {"waveform": waveform.unsqueeze(0), "sample_rate": sample_rate}
 
         return (audio,)
+    
+class VideoToInput(Ac):
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "video_path": ("STRING", {"default": "本视频路径"}),
+            }
+        }
+    RETURN_TYPES = ("VIDEO",)
+    FUNCTION = "video_to_input"
+
+    def video_to_input(self, video_path):
+        if not os.path.exists(video_path):
+            raise FileNotFoundError(f"视频文件不存在: {video_path}")
+
+        input_dir = folder_paths.get_input_directory()
+        file_ext = os.path.splitext(video_path)[1].lower()
+        if not file_ext:
+            file_ext = ".mp4"
+
+        random_digits = ''.join(random.choices(string.digits, k=15))
+        new_filename = f"{random_digits}{file_ext}"
+        dest_path = os.path.join(input_dir, new_filename)
+
+        shutil.copy2(video_path, dest_path)
+
+        if HAS_INPUT_IMPL and InputImpl is not None:
+            return (InputImpl.VideoFromFile(dest_path),)
+        elif HAS_VIDEO_TYPE and VideoFromFile is not None:
+            return (VideoFromFile(dest_path),)
+        else:
+            waveform, sample_rate = load_audio(dest_path)
+            video = {"waveform": waveform.unsqueeze(0), "sample_rate": sample_rate}
+            return (video,)
