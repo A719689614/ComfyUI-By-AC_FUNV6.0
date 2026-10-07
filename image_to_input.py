@@ -4,10 +4,26 @@ import os
 import shutil
 import random
 import string
+from urllib.parse import unquote, urlparse
+from urllib.request import url2pathname
 from PIL import Image, ImageSequence, ImageOps
 import torch
 import numpy as np
 import av
+
+
+def normalize_path(path):
+    if not path:
+        return path
+    if path.startswith('file://') or path.startswith('file:'):
+        parsed = urlparse(path)
+        path = url2pathname(parsed.path)
+        if parsed.netloc and parsed.netloc not in ('', 'localhost'):
+            path = '\\\\' + parsed.netloc + path
+    path = unquote(path)
+    if path.startswith('/') and len(path) > 2 and path[2] == ':':
+        path = path[1:]
+    return path
 
 try:
     from comfy_api.latest import InputImpl
@@ -105,6 +121,7 @@ class ImageToInput(Ac):
     FUNCTION = "image_to_input"
 
     def image_to_input(self, image_path):
+        image_path = normalize_path(image_path)
         if not os.path.exists(image_path):
             raise FileNotFoundError(f"图像文件不存在: {image_path}")
 
@@ -139,6 +156,7 @@ class AudioToInput(Ac):
     FUNCTION = "audio_to_input"
 
     def audio_to_input(self, audio_path):
+        audio_path = normalize_path(audio_path)
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"音频文件不存在: {audio_path}")
 
@@ -173,6 +191,7 @@ class VideoToInput(Ac):
     FUNCTION = "video_to_input"
 
     def video_to_input(self, video_path):
+        video_path = normalize_path(video_path)
         if not os.path.exists(video_path):
             raise FileNotFoundError(f"视频文件不存在: {video_path}")
 
